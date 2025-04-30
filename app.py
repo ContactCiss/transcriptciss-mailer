@@ -1,8 +1,6 @@
 from flask import Flask, request
 from flask_mail import Mail, Message
 import os
-import hmac
-import hashlib
 
 app = Flask(__name__)
 
@@ -17,29 +15,8 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', app.co
 
 mail = Mail(app)
 
-# Webhook endpoint met HMAC-validatie
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    test_mode = os.environ.get("TEST_MODE", "False") == "True"
-
-    # HMAC-validatie (tenzij in testmodus)
-    if not test_mode:
-        secret = os.environ.get("ELEVENLABS_WEBHOOK_SECRET")
-        if not secret:
-            return "Webhook secret ontbreekt. Stel ELEVENLABS_WEBHOOK_SECRET in als environment variable.", 500
-
-        secret_bytes = secret.encode()
-        signature = request.headers.get("x-elevenlabs-signature", "")
-        computed_signature = hmac.new(secret_bytes, request.data, hashlib.sha256).hexdigest()
-
-        # Debug output (alleen voor testen, kan later weg)
-        print("Gekregen signature: ", signature)
-        print("Berekenende signature:", computed_signature)
-
-        if not hmac.compare_digest(signature, computed_signature):
-            return "Signature mismatch", 403
-
-    # Verwerk de payload
     payload = request.get_json()
     print("Ontvangen payload:", payload)
 
@@ -63,6 +40,7 @@ def webhook():
         message = segment.get('message', '')
         time_secs = segment.get('time_in_call_secs', 0)
 
+        # Zet seconden om naar minuten:seconden
         minutes = int(time_secs) // 60
         seconds = int(time_secs) % 60
         timestamp = f"{minutes:02}:{seconds:02}"
@@ -71,7 +49,7 @@ def webhook():
 
     html_content += "</table>"
 
-    # Verstuur e-mail
+    # Maak en verstuur de e-mail
     sender = os.environ.get('MAIL_DEFAULT_SENDER') or os.environ.get('MAIL_USERNAME')
     recipient = os.environ.get('MAIL_RECIPIENT')
 
@@ -88,20 +66,16 @@ def webhook():
         print("Error sending email:", e)
         return f"Fout bij verzenden van e-mail: {str(e)}", 500
 
-# Aliassen
+# Extra endpoint /transcript (voor compatibiliteit)
 @app.route('/transcript', methods=['POST'])
 def transcript():
     return webhook()
 
-@app.route('/elevenlabs/transcriptie', methods=['POST'])
-def elevenlabs_transcriptie():
-    return webhook()
-
+# Health check route
 @app.route('/', methods=['GET'])
 def health():
     return "Server is running!", 200
 
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+if __name__ == "__main__":
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-
