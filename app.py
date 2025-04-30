@@ -82,6 +82,11 @@ def webhook():
 def transcript():
     return webhook()
 
+# ➕ Nieuwe alias voor ElevenLabs webhook
+@app.route('/elevenlabs/transcriptie', methods=['POST'])
+def elevenlabs_transcriptie():
+    return webhook()
+
 # Health check route
 @app.route('/', methods=['GET'])
 def health():
