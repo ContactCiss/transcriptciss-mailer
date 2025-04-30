@@ -15,7 +15,7 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', app.co
 
 mail = Mail(app)
 
-@app.route('/webhook', methods=['POST'])
+@app.route('/elevenlabs/transcriptie', methods=['POST'])
 def webhook():
     payload = request.get_json()
     print("Ontvangen payload:", payload)
