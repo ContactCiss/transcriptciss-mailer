@@ -86,3 +86,8 @@ def transcript():
 @app.route('/', methods=['GET'])
 def health():
     return "Server is running!", 200
+
+# ✅ Zorg dat juiste poort gebruikt wordt op Render
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
