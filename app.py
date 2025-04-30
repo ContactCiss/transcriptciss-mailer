@@ -15,7 +15,7 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', app.co
 
 mail = Mail(app)
 
-@app.route('/elevenlabs/transcriptie', methods=['POST'])
+@app.route('/webhook', methods=['POST'])
 def webhook():
     payload = request.get_json()
     print("Ontvangen payload:", payload)
@@ -71,6 +71,11 @@ def webhook():
 def transcript():
     return webhook()
 
+# Nieuw endpoint voor ElevenLabs
+@app.route('/elevenlabs/transcriptie', methods=['POST'])
+def elevenlabs_transcriptie():
+    return webhook()
+
 # Health check route
 @app.route('/', methods=['GET'])
 def health():
@@ -79,3 +84,4 @@ def health():
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
+
