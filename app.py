@@ -1,6 +1,8 @@
 from flask import Flask, request
 from flask_mail import Mail, Message
 import os
+import hmac
+import hashlib
 
 app = Flask(__name__)
 
@@ -15,8 +17,17 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', app.co
 
 mail = Mail(app)
 
+# Webhook endpoint met HMAC-validatie
 @app.route('/webhook', methods=['POST'])
 def webhook():
+    # 🔐 Valideer de HMAC-handtekening
+    secret = os.environ.get("ELEVENLABS_WEBHOOK_SECRET", "").encode()
+    signature = request.headers.get("x-elevenlabs-signature", "")
+    computed_signature = hmac.new(secret, request.data, hashlib.sha256).hexdigest()
+
+    if not hmac.compare_digest(signature, computed_signature):
+        return "Signature mismatch", 403
+
     payload = request.get_json()
     print("Ontvangen payload:", payload)
 
@@ -75,7 +86,3 @@ def transcript():
 @app.route('/', methods=['GET'])
 def health():
     return "Server is running!", 200
-
-if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
